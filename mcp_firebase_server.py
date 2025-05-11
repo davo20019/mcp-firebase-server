@@ -232,6 +232,39 @@ async def list_document_subcollections(collection_name: str, document_id: str) -
         print(f"Error listing subcollections for document '{document_id}': {e}")
         return [{"error": f"Failed to list subcollections for '{document_id}': {str(e)}"}]
 
+@mcp_server.tool()
+async def update_firestore_document(collection_name: str, document_id: str, update_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Updates an existing document in a specified Firestore collection.
+
+    Args:
+        collection_name: The name of the Firestore collection.
+        document_id: The ID of the document to update.
+        update_data: A dictionary containing the fields to update.
+
+    Returns:
+        A dictionary containing the success status, or an error message.
+    """
+    global db
+    if not db:
+        print("Error: Firestore client not initialized. Cannot update document.")
+        return {"success": False, "error": "Firestore not initialized. Check server logs."}
+
+    print(f"Updating document '{document_id}' in collection '{collection_name}'...")
+    try:
+        doc_ref = db.collection(collection_name).document(document_id)
+        # Check if document exists before attempting to update
+        if not doc_ref.get().exists:
+            print(f"Document with ID '{document_id}' not found in collection '{collection_name}'. Cannot update.")
+            return {"success": False, "error": f"Document '{document_id}' not found in '{collection_name}'."}
+
+        doc_ref.update(update_data)
+        print(f"Document '{document_id}' in collection '{collection_name}' updated successfully.")
+        return {"success": True, "id": document_id, "message": f"Document '{document_id}' in '{collection_name}' updated."}
+    except Exception as e:
+        print(f"Error updating document '{document_id}' in '{collection_name}': {e}")
+        return {"success": False, "error": f"Failed to update document '{document_id}' in '{collection_name}': {str(e)}"}
+
 if __name__ == "__main__":
     print("Starting MCP Firebase Server...")
     # This will typically run the server using stdio transport
