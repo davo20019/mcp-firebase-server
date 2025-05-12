@@ -265,6 +265,47 @@ async def update_firestore_document(collection_name: str, document_id: str, upda
         print(f"Error updating document '{document_id}' in '{collection_name}': {e}")
         return {"success": False, "error": f"Failed to update document '{document_id}' in '{collection_name}': {str(e)}"}
 
+@mcp_server.tool()
+async def query_firestore_collection_with_filter(collection_name: str, filters: Dict[str, Any], limit: int = 50) -> List[Dict[str, Any]]:
+    """
+    Retrieves documents from a specified Firestore collection, filtering by field values.
+    Currently supports equality (==) filters only.
+
+    Args:
+        collection_name: The name of the Firestore collection to query.
+        filters: A dictionary where keys are field names and values are the values to filter by.
+                 Example: {"category": "electronics", "available": True}
+        limit: The maximum number of documents to return (default is 50).
+
+    Returns:
+        A list of documents from the collection that match the filters.
+        Returns an error message if Firestore is not initialized or an error occurs.
+    """
+    global db
+    if not db:
+        print("Error: Firestore client not initialized. Cannot query collection with filter.")
+        return [{"error": "Firestore not initialized. Check server logs and serviceAccountKey.json."}]
+
+    print(f"Querying collection: {collection_name} with filters {filters} and limit {limit}")
+    documents = []
+    try:
+        query = db.collection(collection_name)
+        for field, value in filters.items():
+            query = query.where(field, "==", value)
+        
+        docs_ref = query.limit(limit).stream()
+        
+        for doc in docs_ref:
+            doc_data = doc.to_dict()
+            if doc_data: # Ensure doc_data is not None
+                 doc_data['id'] = doc.id
+                 documents.append(doc_data)
+        print(f"Found {len(documents)} documents in '{collection_name}' matching filters.")
+        return documents
+    except Exception as e:
+        print(f"Error querying collection '{collection_name}' with filters: {e}")
+        return [{"error": f"Failed to query collection '{collection_name}' with filters: {str(e)}"}]
+
 if __name__ == "__main__":
     print("Starting MCP Firebase Server...")
     # This will typically run the server using stdio transport
