@@ -160,7 +160,7 @@ Below is a *conceptual* example based on patterns seen in MCP documentation. You
 ```json
 {
   "mcpServers": {
-    "my_firebase_mcp_connector": { // A unique name you assign to this server instance in the client's config
+    "firebase": { // A unique name you assign to this server instance in the client's config
       "command": "/full/path/to/your/mc-firebase-server/run_server.sh", // IMPORTANT: Use the absolute path to the script
       "args": [], // Typically empty if run_server.sh handles everything
       // "cwd": "/full/path/to/your/mc-firebase-server/", // Usually not needed if run_server.sh cds to its own dir
