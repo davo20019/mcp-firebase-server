@@ -77,25 +77,62 @@ There are a couple of ways to run this MCP server:
 
 This server, named `MCPFirebaseServer`, exposes the following tools:
 
-### 1. `query_firestore_collection`
+### 1. `mcp_firebase_query_firestore_collection`
 
 *   **Description (from docstring):** Retrieves documents from a specified Firestore collection.
 *   **Arguments:**
     *   `collection_name` (string, required): The name of the Firestore collection to query.
     *   `limit` (integer, optional, default: 50): The maximum number of documents to return.
-*   **Returns:** (List[Dict[str, Any]])
-    A list of documents from the collection. Each document is a dictionary including an `id` field. Returns a list containing a single error dictionary if an error occurs (e.g., `[{"error": "Firestore not initialized..."}]` or `[{"error": "Failed to query..."}]`).
+*   **Returns:** A list of documents from the collection, or an error message.
 
-### 2. `add_document_to_firestore`
+### 2. `mcp_firebase_add_document_to_firestore`
 
 *   **Description (from docstring):** Adds a new document with an auto-generated ID to the specified Firestore collection.
 *   **Arguments:**
     *   `collection_name` (string, required): The name of the Firestore collection where the document will be added.
     *   `document_data` (object/dictionary, required): A dictionary representing the document to add.
-*   **Returns:** (Dict[str, Any])
-    A dictionary containing `success` (boolean) and either `id` (string) and `message` (string) on success, or `error` (string) on failure.
-    Example success: `{"success": True, "id": "newDocId", "message": "Document added to 'logs'"}`
-    Example failure: `{"success": False, "error": "Firestore not initialized..."}`
+*   **Returns:** A dictionary containing the success status and the ID of the new document, or an error message.
+
+### 3. `mcp_firebase_list_firestore_collections`
+
+*   **Description (from docstring):** Lists all top-level collections in the Firestore database.
+*   **Arguments:**
+    *   `random_string` (string, required): A dummy parameter (can be any string) as this tool takes no meaningful input.
+*   **Returns:** A list of dictionaries, each containing the 'id' of a collection, or an error message.
+
+### 4. `mcp_firebase_get_firestore_document`
+
+*   **Description (from docstring):** Retrieves a specific document from a Firestore collection by its ID.
+*   **Arguments:**
+    *   `collection_name` (string, required): The name of the Firestore collection.
+    *   `document_id` (string, required): The ID of the document to retrieve.
+*   **Returns:** A dictionary representing the document data, or an error message.
+
+### 5. `mcp_firebase_list_document_subcollections`
+
+*   **Description (from docstring):** Lists all subcollections of a specified document in Firestore.
+*   **Arguments:**
+    *   `collection_name` (string, required): The name of the parent collection.
+    *   `document_id` (string, required): The ID of the document whose subcollections are to be listed.
+*   **Returns:** A list of dictionaries, each containing the 'id' of a subcollection, or an error message.
+
+### 6. `mcp_firebase_update_firestore_document`
+
+*   **Description (from docstring):** Updates an existing document in a specified Firestore collection.
+*   **Arguments:**
+    *   `collection_name` (string, required): The name of the Firestore collection.
+    *   `document_id` (string, required): The ID of the document to update.
+    *   `update_data` (object/dictionary, required): A dictionary containing the fields to update.
+*   **Returns:** A dictionary containing the success status, or an error message.
+
+### 7. `mcp_firebase_query_firestore_collection_with_filter`
+
+*   **Description (from docstring):** Retrieves documents from a specified Firestore collection, filtering by field values (equality `==` only).
+*   **Arguments:**
+    *   `collection_name` (string, required): The name of the Firestore collection to query.
+    *   `filters` (object/dictionary, required): A dictionary where keys are field names and values are the values to filter by (e.g., `{"category": "electronics", "available": True}`).
+    *   `limit` (integer, optional, default: 50): The maximum number of documents to return.
+*   **Returns:** A list of documents from the collection that match the filters, or an error message.
 
 ## Using with Claude (or other MCP Clients)
 
@@ -112,7 +149,7 @@ This MCP Firebase Server is designed to be run as a separate process, typically 
 
 3.  **Launching and Communication:**
     *   When the MCP client needs to use a tool provided by this server, it will launch `mcp_firebase_server.py` using the configured command.
-    *   The client and server then communicate over the MCP protocol (e.g., via `stdio`). The client can discover available tools (`query_firestore_collection`, `add_document_to_firestore`) and call them.
+    *   The client and server then communicate over the MCP protocol (e.g., via `stdio`). The client can discover available tools (like `mcp_firebase_query_firestore_collection`, `mcp_firebase_add_document_to_firestore`, etc.) and call them.
 
 **Conceptual Configuration Example (for an MCP Client like Claude Desktop):**
 
@@ -127,9 +164,11 @@ Below is a *conceptual* example based on patterns seen in MCP documentation. You
       "command": "/full/path/to/your/mc-firebase-server/run_server.sh", // IMPORTANT: Use the absolute path to the script
       "args": [], // Typically empty if run_server.sh handles everything
       // "cwd": "/full/path/to/your/mc-firebase-server/", // Usually not needed if run_server.sh cds to its own dir
-      "env": { 
-        "SERVICE_ACCOUNT_KEY_PATH": "/Users/davidloor/projects/firebase/examcoachai/examcoachai-firebase-adminsdk-qwhk9-5c7a5b82e2.json",
-        "FIREBASE_STORAGE_BUCKET": "examcoachai.appspot.com" // Example bucket name, adjust to your actual bucket
+      "env": {
+        // Replace with the ACTUAL absolute path to your service account key file
+        "SERVICE_ACCOUNT_KEY_PATH": "/path/to/your/serviceAccountKey.json", 
+        // Optional: Replace with your actual Firebase Storage bucket name if needed by future tools
+        "FIREBASE_STORAGE_BUCKET": "your-project-id.appspot.com" 
       }
     }
   }
@@ -141,13 +180,13 @@ Below is a *conceptual* example based on patterns seen in MCP documentation. You
 *   **`"command"`**: The executable to run (e.g., `python`). Make sure it's in the system's PATH or provide the full path to the Python interpreter.
 *   **`"args"`**: A list of arguments. The first argument is typically the script to execute. **It is crucial to use the full, absolute path to `mcp_firebase_server.py`** to ensure the client can find it, regardless of where the client itself is launched from.
 *   **`"cwd"` (Current Working Directory)**: Sometimes, you might need to specify the working directory for the server process, especially if it relies on relative paths for other files (though our `serviceAccountKey.json` path is relative to the script itself, which is generally robust if the script path is absolute).
-*   **`"env"`**: For passing environment variables. While our current server locates `serviceAccountKey.json` relative to its own path, a common pattern for more configurable servers is to pass credential paths or other settings via environment variables.
+*   **`"env"`**: For passing environment variables. While our current server locates `serviceAccountKey.json` relative to its own path, a common pattern for more configurable servers is to pass credential paths or other settings via environment variables. The `SERVICE_ACCOUNT_KEY_PATH` is crucial for authentication. The `FIREBASE_STORAGE_BUCKET` is optional and currently unused by the provided tools, but might be relevant if storage-related tools are added later.
 
 **Interaction Flow (Recap):**
 
 1.  **Client Starts Server:** The MCP client (using the configuration above) starts `mcp_firebase_server.py`.
 2.  **Server Initializes:** Our server attempts to connect to Firebase.
-3.  **Tool Discovery & Calls:** The client discovers and calls tools like `query_firestore_collection` or `add_document_to_firestore` as needed.
+3.  **Tool Discovery & Calls:** The client discovers and calls tools like `mcp_firebase_query_firestore_collection` or `mcp_firebase_add_document_to_firestore` etc., as needed.
 4.  **Server Responds:** Results are sent back to the client via `stdio`.
 
 **Specific Instructions for Claude Desktop or Windsurf:**
