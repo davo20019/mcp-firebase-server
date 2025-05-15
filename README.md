@@ -1,5 +1,6 @@
 # MCP Firebase Server (Model Context Protocol)
 
+[![smithery badge](https://smithery.ai/badge/@davo20019/mcp-firebase-server)](https://smithery.ai/server/@davo20019/mcp-firebase-server)
 This server implements the Model Context Protocol (MCP) to act as a bridge between a Large Language Model (LLM) like Claude and Firebase (Firestore). It allows the LLM to read from and write to Firestore collections by exposing these operations as MCP "tools."
 
 This server is built using the official `mcp` Python SDK.
